@@ -1,0 +1,74 @@
+server {
+    listen 80 default_server;
+
+    root /var/www/power-outage-api/public;
+    index index.php index.html index.htm;
+
+    # Make site accessible from http://localhost
+    server_name localhost;
+
+    # Serve static files directly
+    location ~* \.(jpg|jpeg|gif|css|png|svg|js|ico|html)$ {
+    	access_log off;
+    	expires max;
+    	log_not_found off;
+    }
+
+    # Unless the request is for a valid file (image, js, css, etc.), send to bootstrap
+	if (!-e $request_filename) {
+		rewrite ^/(.*)$ /index.php?/$1 last;
+		break;
+	}
+
+    # Allow api/status to be accessed via http
+    location /api/status {
+        try_files $uri $uri/ /index.php?$query_string;
+        fastcgi_pass unix:/run/php/php83-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 300;
+        include fastcgi_params;
+    }
+
+    # Pass the PHP scripts to FastCGI server listening on /run/php/php83-fpm.sock
+    location / {
+    if ($request_method = 'OPTIONS') {
+          add_header 'Access-Control-Allow-Origin' '*';
+          add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+          add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+          add_header 'Access-Control-Max-Age' 1728000;
+          add_header 'Content-Type' 'text/plain; charset=utf-8';
+          add_header 'Content-Length' 0;
+
+          return 204;
+        }
+        if ($request_method = 'POST') {
+          add_header 'Access-Control-Allow-Origin' '*';
+          add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+          add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+          add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+        }
+        if ($request_method = 'GET') {
+          add_header 'Access-Control-Allow-Origin' '*';
+          add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+          add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+          add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+        }
+
+        # if ($http_x_forwarded_proto != "https") {
+        #      rewrite ^(.*)$ https://$http_host$1 permanent;
+        # }
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Pass the PHP scripts to FastCGI server listening on /run/php/php83-fpm.sock
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/run/php/php83-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 300;
+        include fastcgi_params;
+    }
+}
+
