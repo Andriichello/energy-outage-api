@@ -1,0 +1,57 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '-t'
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/github/$REPO_NAME:$_ENV
+      - '-f'
+      - Dockerfile
+      - '--build-arg'
+      - 'ENV=$_ENV'
+      - '--build-arg'
+      - 'DOMAIN=$_DOMAIN'
+      - '--build-arg'
+      - 'AWS_BUCKET=$_AWS_BUCKET'
+      - '--build-arg'
+      - 'AWS_ACCESS_KEY_ID=$_AWS_ACCESS_KEY_ID'
+      - '--build-arg'
+      - 'AWS_SECRET_ACCESS_KEY=$_AWS_SECRET_ACCESS_KEY'
+      - '--cache-from'
+      - $_AR_HOSTNAME/$PROJECT_ID/github/$REPO_NAME:$_ENV
+      - .
+    id: Build
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/github/$REPO_NAME:$_ENV
+    id: Push
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - >-
+        --image=$_AR_HOSTNAME/$PROJECT_ID/github/$REPO_NAME:$_ENV
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+    id: Deploy
+    entrypoint: gcloud
+images:
+  - >-
+    $_AR_HOSTNAME/$PROJECT_ID/github/$REPO_NAME:$_ENV
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+substitutions:
+  _DEPLOY_REGION: europe-west1
+  _AR_HOSTNAME: europe-west1-docker.pkg.dev
+  _PLATFORM: managed
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed

@@ -1,8 +1,8 @@
 FROM alpine:edge
 
-ARG ENV
-ARG DOMAIN
-ARG AWS_BUCKET
+ARG ENV="staging"
+ARG DOMAIN="energyoutage"
+ARG AWS_BUCKET="energy-outage-secrets"
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 
@@ -24,10 +24,10 @@ RUN apk add --no-cache \
 COPY resources/docker /
 
 # Copy project
-COPY . /var/www/power-outage-api
+COPY . /var/www/energy-outage-api
 
 # Set up workspace and permissions
-WORKDIR /var/www/power-outage-api
+WORKDIR /var/www/energy-outage-api
 
 RUN (addgroup -S www-data || true)  \
     && (adduser -S -G www-data www-data || true) \

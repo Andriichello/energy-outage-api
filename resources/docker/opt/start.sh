@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-sh /var/www/power-outage-api/resources/scripts/setup-vars.sh
+sh /var/www/energy-outage-api/resources/scripts/setup-vars.sh
 
-cd /var/www/power-outage-api
+cd /var/www/energy-outage-api
 
 aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
 aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
