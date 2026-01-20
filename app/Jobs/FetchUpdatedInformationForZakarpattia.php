@@ -64,7 +64,6 @@ class FetchUpdatedInformationForZakarpattia implements ShouldQueue
             $info = UpdatedInformation::make($this->provider, $url, $text);
             // Raise an exception if save fails
             $info->saveOrFail();
-
         } catch (Throwable $e) {
             Log::error('Failed to fetch energy outage updated information', [
                 'provider' => $this->provider,
@@ -73,6 +72,8 @@ class FetchUpdatedInformationForZakarpattia implements ShouldQueue
                 'headers' => $headers,
                 'exception' => $e->getMessage(),
             ]);
+
+            throw $e;
         }
     }
 }
