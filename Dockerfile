@@ -9,16 +9,25 @@ ARG AWS_SECRET_ACCESS_KEY
 # Install necessary packages
 RUN apk add --no-cache \
     nginx supervisor openssl \
-    bash wget git unzip curl nano dos2unix \
+    bash wget git unzip curl nano dos2unix coreutils \
     php83 php83-fpm php83-cli \
     php83-intl php83-xml php83-zip php83-curl \
     php83-gmp php83-bcmath php83-mbstring \
     php83-pgsql php83-pdo_pgsql php83-openssl php83-phar \
     php83-tokenizer php83-session php83-fileinfo \
-    php83-simplexml php83-dom  php83-xmlwriter  \
-    php83-pdo_mysql php83-gd \
-    openssh-client python3 py3-pip \
-    && pip3 install awscli --break-system-packages
+    php83-simplexml php83-dom  php83-xmlwriter php83-iconv \
+    postgresql-client \
+    openssh-client python3 py3-pip
+
+# Create php symlink for php83
+RUN ln -s /usr/bin/php83 /usr/bin/php
+
+RUN python3 -m venv /opt/venv \
+    && . /opt/venv/bin/activate \
+    && pip3 install -U setuptools prompt_toolkit \
+    && pip3 install awscli==1.36.3 \
+    && deactivate \
+    && ln -s /opt/venv/bin/aws /usr/local/bin/aws
 
 # Next, we copy docker and scripts folders.
 COPY resources/docker /
