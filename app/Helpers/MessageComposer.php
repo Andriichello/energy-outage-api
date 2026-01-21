@@ -62,7 +62,7 @@ class MessageComposer
     public static function changed(UpdatedInformation $current, ?UpdatedInformation $previous = null): array
     {
         $message = "\n*Оновлення:*\n" .
-            $current->content;
+            self::escape($current->content);
 
         return [
             'text' => $message,
