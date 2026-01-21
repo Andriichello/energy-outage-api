@@ -24,7 +24,7 @@ class FetchUpdatedInformationForZakarpattia implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(): ?UpdatedInformation
     {
         try {
             // Fetch HTML content of the page
@@ -75,5 +75,7 @@ class FetchUpdatedInformationForZakarpattia implements ShouldQueue
 
             throw $e;
         }
+
+        return $info ?? null;
     }
 }
