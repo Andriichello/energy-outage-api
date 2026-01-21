@@ -13,10 +13,10 @@ RUN apk add --no-cache \
     php83 php83-fpm php83-cli \
     php83-intl php83-xml php83-zip php83-curl \
     php83-gmp php83-bcmath php83-mbstring \
-    php83-pgsql php83-pdo_pgsql php83-openssl php83-phar \
+    php83-mysqli php83-pdo_mysql php83-openssl php83-phar \
     php83-tokenizer php83-session php83-fileinfo \
     php83-simplexml php83-dom  php83-xmlwriter php83-iconv \
-    postgresql-client \
+    mysql-client \
     openssh-client python3 py3-pip
 
 # Create php symlink for php83
