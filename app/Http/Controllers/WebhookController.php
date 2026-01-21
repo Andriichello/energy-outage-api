@@ -10,6 +10,7 @@ use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Throwable;
 
@@ -47,13 +48,8 @@ class WebhookController
 
                 $this->after($message);
             } catch (Throwable $e) {
-                BotRecorder::update(
-                    $upd,
-                    'failed',
-                    $user ?? null,
-                    $chat ?? null,
-                    $message ?? null,
-                );
+                (new ConsoleOutput())->writeln('Webhook from Telegram failed: ' . $e->getMessage());
+                (new ConsoleOutput())->writeln('Failure trace: ' . $e->getTraceAsString());
 
                 $context = [
                     'from' => ($from ?? null)?->toArray(),
@@ -63,6 +59,14 @@ class WebhookController
 
                 Bugsnag::leaveBreadcrumb('Webhook from Telegram', 'manual', $context);
                 Bugsnag::notifyException($e);
+
+                BotRecorder::update(
+                    $upd,
+                    'failed',
+                    $user ?? null,
+                    $chat ?? null,
+                    $message ?? null,
+                );
             }
 
             return response()->json(['message' => 'OK']);
