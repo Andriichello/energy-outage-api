@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Queries\Models\UpdatedInformationQuery;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -17,6 +19,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon $fetched_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * @method static UpdatedInformationQuery query()
  */
 class UpdatedInformation extends Model
 {
@@ -72,5 +76,17 @@ class UpdatedInformation extends Model
         $info->fetched_at = $fetchedAt ?? Carbon::now();
 
         return $info;
+    }
+
+    /**
+     * Create a new Eloquent query builder for the model.
+     *
+     * @param DatabaseBuilder $query
+     *
+     * @return UpdatedInformationQuery
+     */
+    public function newEloquentBuilder($query): UpdatedInformationQuery
+    {
+        return new UpdatedInformationQuery($query);
     }
 }
