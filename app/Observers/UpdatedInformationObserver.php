@@ -43,7 +43,7 @@ class UpdatedInformationObserver
 
             // Notify users that are subscribed to this provider
             User::query()
-                ->whereNotNull('unique_id')
+                ->whereNotNull('users.unique_id')
                 ->join('chats', 'users.id', '=', 'chats.user_id')
                 ->orderByDesc('chats.created_at')
                 ->select('users.*')
