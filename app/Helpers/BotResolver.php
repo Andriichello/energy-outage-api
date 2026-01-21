@@ -43,6 +43,7 @@ class BotResolver
         $user->username = $msg->from->username;
         $user->email = $msg->from->id . '@telegram';
         $user->name = $msg->from->firstName ?? $msg->from->lastName ?? $user->email;
+        $user->password = Str::random();
         $user->is_bot = $msg->from->isBot;
         $user->is_premium = (bool) data_get($msg->from, 'is_premium');
 
