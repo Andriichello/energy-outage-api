@@ -56,6 +56,33 @@ class UpdatedInformation extends Model
     ];
 
     /**
+     * Returns an existing previous updated information record to the current record.
+     *
+     * @return UpdatedInformation|null
+     */
+    public function previous(): ?UpdatedInformation
+    {
+        return UpdatedInformation::query()
+            ->where('provider', $this->provider)
+            ->where('fetched_at', '<', $this->fetched_at)
+            ->orderByDesc('fetched_at')
+            ->first();
+    }
+
+    /**
+     * Returns true if the given record's `content_hash` differs from the
+     * current record's `content_hash`.
+     *
+     * @param UpdatedInformation $info
+     *
+     * @return bool
+     */
+    public function differs(UpdatedInformation $info): bool
+    {
+        return $this->content_hash !== $info->content_hash;
+    }
+
+    /**
      * Make an instance of UpdatedInformation from the given parameters.
      *
      * @param string $provider

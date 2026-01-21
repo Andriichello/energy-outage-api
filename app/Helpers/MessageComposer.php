@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Models\Chat;
+use App\Models\UpdatedInformation;
 
 /**
  * Class MessageComposer.
@@ -39,12 +40,31 @@ class MessageComposer
      */
     public static function welcome(Chat $chat): array
     {
-        $message = "\n*Привіт*\n\n"
-            . static::escape("Цей бот надсилатиме тобі повідомлення про *оновлення графіку відключень* " .
-                "на сайті *Закарпаттяобленерго*.");
+        $message = "\n*Привіт*\n" .
+            "Цей бот надсилатиме повідомлення про *оновлення графіку відключень* " .
+            "на сайті *Закарпаттяобленерго*.";
 
         return [
             'chat_id' => $chat->unique_id,
+            'text' => $message,
+            'parse_mode' => 'MarkdownV2',
+        ];
+    }
+
+    /**
+     * Compose a message about updated information being changed.
+     *
+     * @param UpdatedInformation $current
+     * @param UpdatedInformation $previous
+     *
+     * @return array{text: string, parse_mode: string}
+     */
+    public static function changed(UpdatedInformation $current, UpdatedInformation $previous): array
+    {
+        $message = "\n*Оновлення:*\n" .
+            $current->content;
+
+        return [
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
         ];

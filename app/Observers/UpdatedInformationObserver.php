@@ -2,17 +2,35 @@
 
 namespace App\Observers;
 
+use App\Helpers\BotHelper;
+use App\Helpers\MessageComposer;
+use App\Models\Chat;
 use App\Models\UpdatedInformation;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Telegram\Bot\Api;
+use Telegram\Bot\Exceptions\TelegramSDKException;
+use Telegram\Bot\Laravel\Facades\Telegram;
+use Telegram\Bot\Objects\Message as TelegramMessage;
 
 class UpdatedInformationObserver
 {
+    /**
+     * Telegram Bot API instance to respond via.
+     *
+     * @var Api
+     */
+    protected Api $api;
+
     /**
      * Handle the UpdatedInformation "created" event.
      */
     public function created(UpdatedInformation $info): void
     {
-        if ($this->wasChanged($info)) {
+        // Find the previous record to compare with
+        $previous = $info->previous();
+
+        if (!$previous || $info->differs($previous)) {
             // Log that information has been changed
             Log::info('Information changed for provider', [
                 'provider' => $info->provider,
@@ -20,26 +38,51 @@ class UpdatedInformationObserver
                 'content_hash' => $info->content_hash,
             ]);
 
-            // notify users that are subscribed to this provider
+            // Compose a message with content differences highlighted
+            $message = MessageComposer::changed($info, $previous);
+
+            // Notify users that are subscribed to this provider
+            User::query()
+                ->whereNotNull('unique_id')
+                ->join('chats', 'users.id', '=', 'chats.user_id')
+                ->orderByDesc('chats.created_at')
+                ->select('users.*')
+                ->each(function (User $user) use ($info, $previous, $message) {
+                    /** @var Chat|null $chat */
+                    $chat = $user->chats()->latest()->first();
+
+                    if ($chat) {
+                        $this->send([...$message, 'chat_id' => $chat->unique_id]);
+                    }
+                });
         }
     }
 
     /**
-     * Returns true if the information has changed since the last update.
+     * Resolve Telegram Bot API instance to respond via.
      *
-     * @param UpdatedInformation $info
-     *
-     * @return bool
+     * @return Api
+     * @throws TelegramSDKException
      */
-    protected function wasChanged(UpdatedInformation $info): bool
+    protected function api(): Api
     {
-        /** @var UpdatedInformation|null $existing */
-        $existing = UpdatedInformation::query()
-            ->where('provider', $info->provider)
-            ->where('fetched_at', '<', $info->fetched_at)
-            ->orderByDesc('fetched_at')
-            ->first();
+        if (isset($this->api)) {
+            return $this->api;
+        }
 
-        return empty($existing) || $info->content_hash !== $existing->content_hash;
+        return $this->api = Telegram::bot(array_key_first(BotHelper::botConfigs()));
+    }
+
+    /**
+     * Send the given message via Telegram Bot API.
+     *
+     * @param array $message
+     *
+     * @return TelegramMessage
+     * @throws TelegramSDKException
+     */
+    protected function send(array $message): TelegramMessage
+    {
+        return $this->api()->sendMessage($message);
     }
 }

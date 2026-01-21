@@ -89,8 +89,7 @@ class WebhookController
      */
     protected function api(): Api
     {
-        $config = array_key_first(BotHelper::botConfigs());
-        return Telegram::bot($config);
+        return Telegram::bot(array_key_first(BotHelper::botConfigs()));
     }
 
     /**
