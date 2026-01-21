@@ -6,6 +6,7 @@ use App\Helpers\BotFinder;
 use App\Helpers\BotRecorder;
 use App\Helpers\BotResolver;
 use App\Models\Message;
+use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -46,7 +47,6 @@ class WebhookController
 
                 $this->after($message);
             } catch (Throwable $e) {
-                // report to BugSnag
                 BotRecorder::update(
                     $upd,
                     'failed',
@@ -54,6 +54,15 @@ class WebhookController
                     $chat ?? null,
                     $message ?? null,
                 );
+
+                $context = [
+                    'from' => ($from ?? null)?->toArray(),
+                    'chat' => ($chat ?? null)?->toArray(),
+                    'message' => ($message ?? null)?->toArray(),
+                ];
+
+                Bugsnag::leaveBreadcrumb('Webhook from Telegram', 'manual', $context);
+                Bugsnag::notifyException($e);
             }
 
             return response()->json(['message' => 'OK']);
