@@ -68,7 +68,7 @@ class MessageComposer
             self::escape($current->content);
 
         return [
-            'chat_id' => $chat->unique_id,
+            'chat_id' => $chat?->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
         ];
