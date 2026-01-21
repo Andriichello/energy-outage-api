@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\BotFinder;
+use App\Helpers\BotHelper;
 use App\Helpers\BotRecorder;
 use App\Helpers\BotResolver;
+use App\Helpers\MessageComposer;
 use App\Models\Message;
 use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Telegram\Bot\Api;
 use Telegram\Bot\Exceptions\TelegramSDKException;
+use Telegram\Bot\Laravel\Facades\Telegram;
 use Throwable;
 
 /**
@@ -78,6 +82,31 @@ class WebhookController
     }
 
     /**
+     * Resolve Telegram Bot API instance to respond via.
+     *
+     * @return Api
+     * @throws TelegramSDKException
+     */
+    protected function api(): Api
+    {
+        $config = array_key_first(BotHelper::botConfigs());
+        return Telegram::bot($config);
+    }
+
+    /**
+     * Send the given message via Telegram Bot API.
+     *
+     * @param array $message
+     *
+     * @return \Telegram\Bot\Objects\Message
+     * @throws TelegramSDKException
+     */
+    protected function send(array $message): \Telegram\Bot\Objects\Message
+    {
+        return $this->api()->sendMessage($message);
+    }
+
+    /**
      * Perform actions after processing the webhook update.
      *
      * @param Message $message
@@ -87,6 +116,11 @@ class WebhookController
      */
     protected function after(Message $message): void
     {
-        // Respond to a message from user...
+        // Respond to messages from users...
+        if ($message->type === 'command') {
+            if ($message->text === '/start') {
+                $this->send(MessageComposer::welcome($message->chat));
+            }
+        }
     }
 }
