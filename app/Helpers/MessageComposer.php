@@ -64,8 +64,18 @@ class MessageComposer
         ?UpdatedInformation $previous = null,
         ?Chat $chat = null
     ): array {
-        $message = "\n*Оновлення:*\n" .
-            self::escape($current->content);
+        $message = empty($previous)
+            ? "\n*Актуальна інформація:*\n\n"
+            : "\n*Оновлена інформація:*\n\n";
+
+        if ($previous !== null) {
+            // Show a diff between previous and current
+            $diff = DiffHelper::highlightChanges($previous->content, $current->content);
+            $message .= $diff;
+        } else {
+            // No previous version, just show current content
+            $message .= self::escape($current->content);
+        }
 
         return [
             'chat_id' => $chat?->unique_id,
