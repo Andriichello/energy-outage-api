@@ -8,6 +8,7 @@ use App\Helpers\BotRecorder;
 use App\Helpers\BotResolver;
 use App\Helpers\MessageComposer;
 use App\Models\Message;
+use App\Models\UpdatedInformation;
 use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -119,6 +120,15 @@ class WebhookController
         if ($message->type === 'command') {
             if ($message->text === '/start') {
                 $this->send(MessageComposer::welcome($message->chat));
+            }
+
+            if (in_array($message->text, ['/latest', '/start'])) {
+                $latest = UpdatedInformation::query()
+                    ->where('provider', 'Zakarpattia')
+                    ->latest()
+                    ->first();
+
+                $this->send(MessageComposer::changed($latest));
             }
         }
     }

@@ -55,11 +55,11 @@ class MessageComposer
      * Compose a message about updated information being changed.
      *
      * @param UpdatedInformation $current
-     * @param UpdatedInformation $previous
+     * @param UpdatedInformation|null $previous
      *
      * @return array{text: string, parse_mode: string}
      */
-    public static function changed(UpdatedInformation $current, UpdatedInformation $previous): array
+    public static function changed(UpdatedInformation $current, ?UpdatedInformation $previous = null): array
     {
         $message = "\n*Оновлення:*\n" .
             $current->content;
