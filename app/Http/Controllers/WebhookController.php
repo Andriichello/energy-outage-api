@@ -128,7 +128,7 @@ class WebhookController
                     ->latest()
                     ->first();
 
-                $this->send(MessageComposer::changed($latest));
+                $this->send(MessageComposer::changed($latest, chat: $message->chat));
             }
         }
     }

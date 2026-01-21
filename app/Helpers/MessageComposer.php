@@ -59,12 +59,16 @@ class MessageComposer
      *
      * @return array{text: string, parse_mode: string}
      */
-    public static function changed(UpdatedInformation $current, ?UpdatedInformation $previous = null): array
-    {
+    public static function changed(
+        UpdatedInformation $current,
+        ?UpdatedInformation $previous = null,
+        ?Chat $chat = null
+    ): array {
         $message = "\n*Оновлення:*\n" .
             self::escape($current->content);
 
         return [
+            'chat_id' => $chat->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
         ];
