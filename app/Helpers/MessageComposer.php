@@ -68,14 +68,16 @@ class MessageComposer
             ? "\n*Актуальна інформація:*\n\n"
             : "\n*Оновлена інформація:*\n\n";
 
-        if ($previous !== null) {
-            // Show a diff between previous and current
-            $diff = DiffHelper::highlightChanges($previous->content, $current->content);
-            $message .= $diff;
-        } else {
-            // No previous version, just show current content
-            $message .= self::escape($current->content);
-        }
+        $message .= self::escape($current->content);
+
+//        if ($previous !== null) {
+//            // Show a diff between previous and current
+//            $diff = DiffHelper::highlightChanges($previous->content, $current->content);
+//            $message .= $diff;
+//        } else {
+//            // No previous version, just show current content
+//            $message .= self::escape($current->content);
+//        }
 
         return [
             'chat_id' => $chat?->unique_id,
