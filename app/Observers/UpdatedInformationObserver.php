@@ -44,7 +44,7 @@ class UpdatedInformationObserver
             // Notify users that are subscribed to this provider
             User::query()
                 ->whereNotNull('users.unique_id')
-                ->join('chats', 'users.id', '=', 'chats.user_id')
+                ->join('chats', 'users.unique_id', '=', 'chats.user_id')
                 ->orderByDesc('chats.created_at')
                 ->select('users.*')
                 ->each(function (User $user) use ($info, $previous, $message) {
