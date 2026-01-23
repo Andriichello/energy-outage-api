@@ -7,8 +7,10 @@ use App\Helpers\MessageComposer;
 use App\Models\Chat;
 use App\Models\UpdatedInformation;
 use App\Models\User;
+use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
+use Telegram\Bot\Exceptions\TelegramResponseException;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Telegram\Bot\Objects\Message as TelegramMessage;
@@ -78,11 +80,24 @@ class UpdatedInformationObserver
      *
      * @param array $message
      *
-     * @return TelegramMessage
+     * @return TelegramMessage|null
      * @throws TelegramSDKException
      */
-    protected function send(array $message): TelegramMessage
+    protected function send(array $message): ?TelegramMessage
     {
-        return $this->api()->sendMessage($message);
+        try {
+            return $this->api()->sendMessage($message);
+        } catch (TelegramResponseException $e) {
+            Bugsnag::leaveBreadcrumb('Sending Telegram message', $message);
+            Bugsnag::notifyException($e);
+
+            if ($e->getMessage() === 'Forbidden: bot was blocked by the user') {
+                Chat::query()
+                    ->where('unique_id', $message['chat_id'])
+                    ->delete();
+            }
+        }
+
+        return null;
     }
 }

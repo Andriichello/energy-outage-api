@@ -7,6 +7,7 @@ use App\Helpers\BotHelper;
 use App\Helpers\BotRecorder;
 use App\Helpers\BotResolver;
 use App\Helpers\MessageComposer;
+use App\Models\Chat;
 use App\Models\Message;
 use App\Models\UpdatedInformation;
 use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Telegram\Bot\Api;
+use Telegram\Bot\Exceptions\TelegramResponseException;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use Throwable;
@@ -98,12 +100,25 @@ class WebhookController
      *
      * @param array $message
      *
-     * @return \Telegram\Bot\Objects\Message
+     * @return \Telegram\Bot\Objects\Message|null
      * @throws TelegramSDKException
      */
-    protected function send(array $message): \Telegram\Bot\Objects\Message
+    protected function send(array $message): ?\Telegram\Bot\Objects\Message
     {
-        return $this->api()->sendMessage($message);
+        try {
+            return $this->api()->sendMessage($message);
+        } catch (TelegramResponseException $e) {
+            Bugsnag::leaveBreadcrumb('Sending Telegram message', $message);
+            Bugsnag::notifyException($e);
+
+            if ($e->getMessage() === 'Forbidden: bot was blocked by the user') {
+                Chat::query()
+                    ->where('unique_id', $message['chat_id'])
+                    ->delete();
+            }
+        }
+
+        return null;
     }
 
     /**
