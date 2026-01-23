@@ -108,7 +108,7 @@ class WebhookController
         try {
             return $this->api()->sendMessage($message);
         } catch (TelegramResponseException $e) {
-            Bugsnag::leaveBreadcrumb('Sending Telegram message', $message);
+            Bugsnag::leaveBreadcrumb('Sending Telegram message', 'manual', $message);
             Bugsnag::notifyException($e);
 
             if ($e->getMessage() === 'Forbidden: bot was blocked by the user') {
