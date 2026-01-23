@@ -50,7 +50,9 @@ class BotRecorder
 
         $update->save();
 
-        BotResolver::user($msg);
+        if ($msg) {
+            BotResolver::user($msg);
+        }
 
         return $update;
     }
