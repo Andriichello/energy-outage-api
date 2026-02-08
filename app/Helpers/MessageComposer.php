@@ -13,6 +13,24 @@ use Illuminate\Support\Facades\Log;
 class MessageComposer
 {
     /**
+     * Get the persistent reply keyboard markup.
+     *
+     * @return array
+     */
+    public static function persistentKeyboard(): array
+    {
+        return [
+            'keyboard' => [
+                [
+                    ['text' => '⚙️ Обрати чергу'],
+                    ['text' => '📋 Актуальна інформація']
+                ]
+            ],
+            'resize_keyboard' => true,
+            'persistent' => true,
+        ];
+    }
+    /**
      * Escape special characters with a backslash.
      *
      * @param string|null $string
@@ -71,22 +89,11 @@ class MessageComposer
             "Щоб переглянути актуальну інформацію, " .
             "використовуйте кнопку \n*\"📋 Актуальна інформація\"*";
 
-        $keyboard = [
-            'keyboard' => [
-                [
-                    ['text' => '⚙️ Обрати чергу'],
-                    ['text' => '📋 Актуальна інформація']
-                ]
-            ],
-            'resize_keyboard' => true,
-            'persistent' => true,
-        ];
-
         return [
             'chat_id' => $chat->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
-            'reply_markup' => json_encode($keyboard),
+            'reply_markup' => json_encode(self::persistentKeyboard()),
         ];
     }
 
@@ -121,6 +128,7 @@ class MessageComposer
             'chat_id' => $chat?->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
+            'reply_markup' => json_encode(self::persistentKeyboard()),
         ];
 
         if ($disableNotification) {
@@ -163,6 +171,7 @@ class MessageComposer
             'chat_id' => $chat?->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
+            'reply_markup' => json_encode(self::persistentKeyboard()),
         ];
     }
 
