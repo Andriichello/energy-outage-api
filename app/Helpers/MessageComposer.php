@@ -33,6 +33,27 @@ class MessageComposer
     }
 
     /**
+     * Unescape special characters by removing backslashes.
+     *
+     * @param string|null $string
+     * @param array|null $search
+     * @param array|null $replace
+     *
+     * @return string|null
+     */
+    public static function unescape(
+        ?string $string,
+        ?array $search = ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'],
+        ?array $replace = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    ): ?string {
+        if (empty($string)) {
+            return $string;
+        }
+
+        return (string) str_replace($search, $replace, $string);
+    }
+
+    /**
      * Compose a welcome message for the new user.
      *
      * @param Chat $chat
@@ -58,13 +79,15 @@ class MessageComposer
      * @param UpdatedInformation $current
      * @param UpdatedInformation|null $previous
      * @param Chat|null $chat
+     * @param bool $disableNotification
      *
-     * @return array{text: string, parse_mode: string}
+     * @return array{text: string, parse_mode: string, disable_notification?: bool}
      */
     public static function added(
         UpdatedInformation $current,
         ?UpdatedInformation $previous = null,
-        ?Chat $chat = null
+        ?Chat $chat = null,
+        bool $disableNotification = false
     ): array {
         $added = DiffHelper::added($current, $previous);
         $content = join("\n\n", $added);
@@ -77,11 +100,17 @@ class MessageComposer
 
         $message .= self::escape($content);
 
-        return [
+        $result = [
             'chat_id' => $chat?->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
         ];
+
+        if ($disableNotification) {
+            $result['disable_notification'] = true;
+        }
+
+        return $result;
     }
 
     /**

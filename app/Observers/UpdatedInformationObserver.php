@@ -3,6 +3,8 @@
 namespace App\Observers;
 
 use App\Helpers\BotHelper;
+use App\Helpers\DiffHelper;
+use App\Helpers\GroupHelper;
 use App\Helpers\MessageComposer;
 use App\Models\Chat;
 use App\Models\UpdatedInformation;
@@ -50,6 +52,7 @@ class UpdatedInformationObserver
 
             // Compose a message with added paragraphs
             $message = MessageComposer::added($info, $previous);
+            $content = MessageComposer::unescape($message['text']);
 
             // Log that information has been changed
             Log::info('Message', $message);
@@ -60,12 +63,19 @@ class UpdatedInformationObserver
                 ->join('chats', 'users.unique_id', '=', 'chats.user_id')
                 ->orderByDesc('chats.created_at')
                 ->select('users.*')
-                ->each(function (User $user) use ($info, $previous, $message) {
+                ->each(function (User $user) use ($info, $previous, $message, $content) {
                     /** @var Chat|null $chat */
                     $chat = $user->chats()->latest()->first();
 
                     if ($chat) {
-                        $this->send([...$message, 'chat_id' => $chat->unique_id]);
+                        $this->send([
+                            ...$message,
+                            'chat_id' => $chat->unique_id,
+                            // Disable notification (silent) if user has interested groups
+                            // but none of them are mentioned in the new paragraphs
+                            'disable_notification' => !empty($user->interested_groups) &&
+                                !GroupHelper::containsInterestedGroups($content, $user->interested_groups)
+                        ]);
                     }
                 });
         }

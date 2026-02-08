@@ -28,6 +28,7 @@ use Illuminate\Support\Collection;
  * @property string|null $username
  * @property boolean|null $is_bot
  * @property boolean|null $is_premium
+ * @property array|null $interested_groups
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -50,6 +51,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'interested_groups',
 
         /** Telegram */
         'unique_id',
@@ -78,6 +80,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'interested_groups' => 'array',
             'is_bot' => 'boolean',
             'is_premium' => 'boolean',
         ];
