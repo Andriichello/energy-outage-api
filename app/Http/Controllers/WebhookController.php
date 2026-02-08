@@ -169,19 +169,6 @@ class WebhookController
             return;
         }
 
-        // Handle "show_groups" button from welcome message
-        if ($data === 'show_groups') {
-            $chat = $user->chats()->latest()->first();
-
-            if ($chat) {
-                $this->send(MessageComposer::groupsMenu($chat, $user));
-                $this->api()->answerCallbackQuery([
-                    'callback_query_id' => $query->getId(),
-                ]);
-            }
-            return;
-        }
-
         // Handle "toggle_group:X-Y" buttons
         if (str_starts_with($data, 'toggle_group:')) {
             $groupName = str_replace('toggle_group:', '', $data);
@@ -190,7 +177,7 @@ class WebhookController
             if (!in_array($groupName, GroupHelper::AVAILABLE_GROUPS)) {
                 $this->api()->answerCallbackQuery([
                     'callback_query_id' => $query->getId(),
-                    'text' => 'Невірна група',
+                    'text' => 'Невірна черга',
                 ]);
                 return;
             }
@@ -246,13 +233,36 @@ class WebhookController
                 }
             }
 
-            if (in_array($message->text, ['/latest', '/start'])) {
+            if ($message->text === '/latest') {
                 $latest = UpdatedInformation::query()
                     ->where('provider', 'Zakarpattia')
                     ->latest()
                     ->first();
 
-                $this->send(MessageComposer::changed($latest, chat: $message->chat));
+                $this->send(MessageComposer::added($latest, chat: $message->chat));
+            }
+        }
+
+        // Handle reply keyboard button presses (as text messages)
+        if ($message->type === 'text') {
+            if ($message->text === '⚙️ Обрати чергу') {
+                $user = User::query()
+                    ->where('unique_id', $message->chat->user_id)
+                    ->first();
+
+                if ($user) {
+                    $this->send(MessageComposer::groupsMenu($message->chat, $user));
+                }
+            }
+
+            if ($message->text === '📋 Актуальна інформація') {
+                $latest = UpdatedInformation::query()
+                    ->where('provider', 'Zakarpattia')
+                    ->latest()
+                    ->first();
+
+                // Send with previous = null to show full content
+                $this->send(MessageComposer::added($latest, null, $message->chat));
             }
         }
     }
