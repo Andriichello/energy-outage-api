@@ -8,6 +8,20 @@ namespace App\Helpers;
 class GroupHelper
 {
     /**
+     * Available electricity groups for users to subscribe to.
+     *
+     * @var array
+     */
+    public const AVAILABLE_GROUPS = [
+        '1-1', '1-2',
+        '2-1', '2-2',
+        '3-1', '3-2',
+        '4-1', '4-2',
+        '5-1', '5-2',
+        '6-1', '6-2',
+    ];
+
+    /**
      * Extract electricity groups from a text paragraph.
      *
      * Groups are formatted as "X-Y" where X is the main group number

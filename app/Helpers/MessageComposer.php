@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\Chat;
 use App\Models\UpdatedInformation;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -58,18 +59,29 @@ class MessageComposer
      *
      * @param Chat $chat
      *
-     * @return array{chat_id: int, text: string, parse_mode: string}
+     * @return array{chat_id: int, text: string, parse_mode: string, reply_markup?: string}
      */
     public static function welcome(Chat $chat): array
     {
         $message = "\n*Привіт*\n" .
             "Цей бот надсилатиме повідомлення про *оновлення графіку відключень* " .
-            "на сайті *Закарпаттяобленерго*";
+            "на сайті *Закарпаттяобленерго*\.\n\n" .
+            "Щоб отримувати *гучні сповіщення* тільки для вашої групи, " .
+            "натисніть кнопку нижче\.";
+
+        $keyboard = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '⚙️ Налаштувати групи', 'callback_data' => 'show_groups']
+                ]
+            ]
+        ];
 
         return [
             'chat_id' => $chat->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
+            'reply_markup' => json_encode($keyboard),
         ];
     }
 
@@ -146,6 +158,80 @@ class MessageComposer
             'chat_id' => $chat?->unique_id,
             'text' => $message,
             'parse_mode' => 'MarkdownV2',
+        ];
+    }
+
+    /**
+     * Compose a groups selection message with inline keyboard.
+     *
+     * @param Chat $chat
+     * @param User $user
+     *
+     * @return array{chat_id: int, text: string, parse_mode: string, reply_markup: string}
+     */
+    public static function groupsMenu(Chat $chat, User $user): array
+    {
+        $userGroups = $user->interested_groups ?? [];
+        $buttons = [];
+
+        foreach (GroupHelper::AVAILABLE_GROUPS as $group) {
+            $status = in_array($group, $userGroups) ? '✅ ' : '';
+            $buttons[] = [
+                'text' => $status . $group,
+                'callback_data' => 'toggle_group:' . $group
+            ];
+        }
+
+        // Chunk buttons into rows of 3 for a clean grid
+        $keyboard = [
+            'inline_keyboard' => array_chunk($buttons, 3)
+        ];
+
+        $message = "*Оберіть групи для отримання сповіщень зі звуком:*\n\n" .
+            "Натисніть на групу, щоб увімкнути або вимкнути її\.\n\n" .
+            "Ви отримуватимете *сповіщення зі звуком* тільки для обраних груп\.";
+
+        return [
+            'chat_id' => $chat->unique_id,
+            'text' => $message,
+            'parse_mode' => 'MarkdownV2',
+            'reply_markup' => json_encode($keyboard),
+        ];
+    }
+
+    /**
+     * Compose an updated groups selection message (for editing existing message).
+     *
+     * @param User $user
+     *
+     * @return array{text: string, parse_mode: string, reply_markup: string}
+     */
+    public static function groupsMenuUpdate(User $user): array
+    {
+        $userGroups = $user->interested_groups ?? [];
+        $buttons = [];
+
+        foreach (GroupHelper::AVAILABLE_GROUPS as $group) {
+            $status = in_array($group, $userGroups) ? '✅ ' : '';
+            $buttons[] = [
+                'text' => $status . $group,
+                'callback_data' => 'toggle_group:' . $group
+            ];
+        }
+
+        // Chunk buttons into rows of 3 for a clean grid
+        $keyboard = [
+            'inline_keyboard' => array_chunk($buttons, 3)
+        ];
+
+        $message = "*Оберіть групи для отримання сповіщень зі звуком:*\n\n" .
+            "Натисніть на групу, щоб увімкнути або вимкнути її\.\n\n" .
+            "Ви отримуватимете *сповіщення зі звуком* тільки для обраних груп\.";
+
+        return [
+            'text' => $message,
+            'parse_mode' => 'MarkdownV2',
+            'reply_markup' => json_encode($keyboard),
         ];
     }
 }

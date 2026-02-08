@@ -6,10 +6,12 @@ use App\Helpers\BotFinder;
 use App\Helpers\BotHelper;
 use App\Helpers\BotRecorder;
 use App\Helpers\BotResolver;
+use App\Helpers\GroupHelper;
 use App\Helpers\MessageComposer;
 use App\Models\Chat;
 use App\Models\Message;
 use App\Models\UpdatedInformation;
+use App\Models\User;
 use Bugsnag\BugsnagLaravel\Facades\Bugsnag;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +21,7 @@ use Telegram\Bot\Api;
 use Telegram\Bot\Exceptions\TelegramResponseException;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use Telegram\Bot\Objects\CallbackQuery;
 use Throwable;
 
 /**
@@ -40,9 +43,28 @@ class WebhookController
 
         $upd = $bot->getWebhookUpdate();
         $msg = $upd->getMessage();
+        $callbackQuery = $upd->getCallbackQuery();
 
         Log::debug('Webhook from Telegram', ['update' => $upd->toArray()]);
 
+        // Handle callback queries (button clicks)
+        if ($callbackQuery) {
+            try {
+                $this->handleCallback($callbackQuery);
+            } catch (Throwable $e) {
+                (new ConsoleOutput())->writeln('Callback query failed: ' . $e->getMessage());
+                (new ConsoleOutput())->writeln('Failure trace: ' . $e->getTraceAsString());
+
+                Bugsnag::leaveBreadcrumb('Callback query from Telegram', 'manual', [
+                    'callback_query' => $callbackQuery->toArray(),
+                ]);
+                Bugsnag::notifyException($e);
+            }
+
+            return response()->json(['message' => 'OK']);
+        }
+
+        // Handle regular messages
         if ($msg instanceof \Telegram\Bot\Objects\Message) {
             try {
                 $from = BotResolver::user($msg);
@@ -122,6 +144,83 @@ class WebhookController
     }
 
     /**
+     * Handle callback queries from inline keyboard buttons.
+     *
+     * @param CallbackQuery $query
+     *
+     * @return void
+     * @throws TelegramSDKException
+     */
+    protected function handleCallback(CallbackQuery $query): void
+    {
+        $data = $query->getData();
+        $from = $query->getFrom();
+
+        // Find the user
+        $user = User::query()
+            ->where('unique_id', $from->getId())
+            ->first();
+
+        if (!$user) {
+            $this->api()->answerCallbackQuery([
+                'callback_query_id' => $query->getId(),
+                'text' => 'Користувача не знайдено',
+            ]);
+            return;
+        }
+
+        // Handle "show_groups" button from welcome message
+        if ($data === 'show_groups') {
+            $chat = $user->chats()->latest()->first();
+
+            if ($chat) {
+                $this->send(MessageComposer::groupsMenu($chat, $user));
+                $this->api()->answerCallbackQuery([
+                    'callback_query_id' => $query->getId(),
+                ]);
+            }
+            return;
+        }
+
+        // Handle "toggle_group:X-Y" buttons
+        if (str_starts_with($data, 'toggle_group:')) {
+            $groupName = str_replace('toggle_group:', '', $data);
+
+            // Validate the group name
+            if (!in_array($groupName, GroupHelper::AVAILABLE_GROUPS)) {
+                $this->api()->answerCallbackQuery([
+                    'callback_query_id' => $query->getId(),
+                    'text' => 'Невірна група',
+                ]);
+                return;
+            }
+
+            // Toggle the group
+            $groups = $user->interested_groups ?? [];
+            if (in_array($groupName, $groups)) {
+                $groups = array_diff($groups, [$groupName]);
+            } else {
+                $groups[] = $groupName;
+            }
+
+            $user->update(['interested_groups' => array_values($groups)]);
+
+            // Update the keyboard to show the new state
+            $this->api()->editMessageText([
+                'chat_id' => $query->getMessage()->getChat()->getId(),
+                'message_id' => $query->getMessage()->getMessageId(),
+                ...MessageComposer::groupsMenuUpdate($user),
+            ]);
+
+            // Answer the callback to stop the loading spinner
+            $this->api()->answerCallbackQuery([
+                'callback_query_id' => $query->getId(),
+                'text' => '✅ Оновлено!',
+            ]);
+        }
+    }
+
+    /**
      * Perform actions after processing the webhook update.
      *
      * @param Message $message
@@ -135,6 +234,16 @@ class WebhookController
         if ($message->type === 'command') {
             if ($message->text === '/start') {
                 $this->send(MessageComposer::welcome($message->chat));
+            }
+
+            if ($message->text === '/groups') {
+                $user = User::query()
+                    ->where('unique_id', $message->chat->user_id)
+                    ->first();
+
+                if ($user) {
+                    $this->send(MessageComposer::groupsMenu($message->chat, $user));
+                }
             }
 
             if (in_array($message->text, ['/latest', '/start'])) {
