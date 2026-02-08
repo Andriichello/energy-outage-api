@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\UpdatedInformation;
 use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\SequenceMatcher;
 
@@ -10,6 +11,38 @@ use Jfcherng\Diff\SequenceMatcher;
  */
 class DiffHelper
 {
+    /**
+     * Returns paragraphs that are added in the new version compared to the old version.
+     *
+     * @param UpdatedInformation $new
+     * @param UpdatedInformation|null $old
+     *
+     * @return array
+     */
+    public static function added(UpdatedInformation $new, ?UpdatedInformation $old): array
+    {
+        if (empty($old) || empty($old->content)) {
+            return $new->paragraphs;
+        }
+
+        $newParagraphs = $new->paragraphs;
+        $oldParagraphs = $old->paragraphs;
+
+        $paragraphs = [];
+
+        foreach ($newParagraphs as $paragraph) {
+            if (in_array($paragraph, $oldParagraphs)) {
+                continue;
+            }
+
+            $paragraphs[] = $paragraph;
+        }
+
+        $paragraphs = array_unique($paragraphs);
+
+        return $paragraphs;
+    }
+
     /**
      * Generate a GitHub-style diff for Telegram (MarkdownV2 format).
      *

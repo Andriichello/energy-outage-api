@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\Chat;
 use App\Models\UpdatedInformation;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class MessageComposer.
@@ -52,10 +53,43 @@ class MessageComposer
     }
 
     /**
+     * Compose a message about new paragraphs being added to updated information.
+     *
+     * @param UpdatedInformation $current
+     * @param UpdatedInformation|null $previous
+     * @param Chat|null $chat
+     *
+     * @return array{text: string, parse_mode: string}
+     */
+    public static function added(
+        UpdatedInformation $current,
+        ?UpdatedInformation $previous = null,
+        ?Chat $chat = null
+    ): array {
+        $added = DiffHelper::added($current, $previous);
+        $content = join("\n\n", $added);
+
+        Log::info('added: ', ['added' => $added]);
+
+        $message = empty($previous) || count($current->paragraphs) === count($added)
+            ? "\n*Актуальна інформація:*\n\n"
+            : "";
+
+        $message .= self::escape($content);
+
+        return [
+            'chat_id' => $chat?->unique_id,
+            'text' => $message,
+            'parse_mode' => 'MarkdownV2',
+        ];
+    }
+
+    /**
      * Compose a message about updated information being changed.
      *
      * @param UpdatedInformation $current
      * @param UpdatedInformation|null $previous
+     * @param Chat|null $chat
      *
      * @return array{text: string, parse_mode: string}
      */

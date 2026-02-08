@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Queries\Models\UpdatedInformationQuery;
+use Database\Factories\ChatFactory;
+use Database\Factories\UpdatedInformationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Illuminate\Support\Carbon;
@@ -20,10 +23,15 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
+ * @property-read string[] $paragraphs
+ *
  * @method static UpdatedInformationQuery query()
+ * @method static UpdatedInformationFactory factory()
  */
 class UpdatedInformation extends Model
 {
+    use HasFactory;
+
     /**
      * The table associated with the model.
      *
@@ -43,6 +51,15 @@ class UpdatedInformation extends Model
         'content_hash',
         'metadata',
         'fetched_at',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'paragraphs'
     ];
 
     /**
@@ -80,6 +97,16 @@ class UpdatedInformation extends Model
     public function differs(UpdatedInformation $info): bool
     {
         return $this->content_hash !== $info->content_hash;
+    }
+
+    /**
+     * Returns an array of paragraphs from the content.
+     *
+     * @return string[]
+     */
+    public function getParagraphsAttribute(): array
+    {
+        return preg_split('/\n\n+/', $this->content);
     }
 
     /**

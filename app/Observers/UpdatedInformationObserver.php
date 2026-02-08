@@ -29,8 +29,16 @@ class UpdatedInformationObserver
      */
     public function created(UpdatedInformation $info): void
     {
+        Log::info('created: ', ['info' => $info->toArray()]);
+
+        if (empty($info->content)) {
+            return;
+        }
+
         // Find the previous record to compare with
         $previous = $info->previous();
+
+        Log::info('previous: ', ['previous' => $previous?->toArray()]);
 
         if (!$previous || $info->differs($previous)) {
             // Log that information has been changed
@@ -40,8 +48,11 @@ class UpdatedInformationObserver
                 'content_hash' => $info->content_hash,
             ]);
 
-            // Compose a message with content differences highlighted
-            $message = MessageComposer::changed($info, $previous);
+            // Compose a message with added paragraphs
+            $message = MessageComposer::added($info, $previous);
+
+            // Log that information has been changed
+            Log::info('Message', $message);
 
             // Notify users that are subscribed to this provider
             User::query()
