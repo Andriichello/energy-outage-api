@@ -20,6 +20,27 @@ class GroupHelper
         '5-1', '5-2',
         '6-1', '6-2',
     ];
+
+    /**
+     * Available electricity groups for users to subscribe to.
+     *
+     * @var array
+     */
+    public const GROUP_ALIASES = [
+        '1.1' => '1-1',
+        '1.2' => '1-2',
+        '2.1' => '2-1',
+        '2.2' => '2-2',
+        '3.1' => '3-1',
+        '3.2' => '3-2',
+        '4.1' => '4-1',
+        '4.2' => '4-2',
+        '5.1' => '5-1',
+        '5.2' => '5-2',
+        '6.1' => '6-1',
+        '6.2' => '6-2',
+    ];
+
     /**
      * Extract electricity groups from a text paragraph.
      *
@@ -34,6 +55,18 @@ class GroupHelper
     {
         // Match patterns like "3-1", "5-2", "10-3", etc.
         preg_match_all('/\b(\d+)-(\d+)\b/', $text, $matches);
+        // Match patterns like "3.1", "5.2", "10.3", etc.
+        preg_match_all('/\b(\d+)\.(\d+)\b/', $text, $aliasMatches);
+
+        if (!empty($aliasMatches[0]) && is_array($aliasMatches[0])) {
+            foreach ($aliasMatches[0] as $aliasMatch) {
+                if (!isset(self::GROUP_ALIASES[$aliasMatch])) {
+                    continue;
+                }
+
+                $matches[0][] = self::GROUP_ALIASES[$aliasMatch];
+            }
+        }
 
         if (empty($matches[0])) {
             return [];
